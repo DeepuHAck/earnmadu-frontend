@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { setEarnings, setWithdrawals } from '../store/slices/earningSlice';
 import axios from 'axios';
-import { toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 
 const Earnings = () => {
   const dispatch = useDispatch();
