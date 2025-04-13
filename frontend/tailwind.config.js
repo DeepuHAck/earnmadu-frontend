@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
+      },
       colors: {
         primary: {
           50: '#f0f9ff',
@@ -18,7 +21,6 @@ export default {
           700: '#0369a1',
           800: '#075985',
           900: '#0c4a6e',
-          950: '#082f49',
         },
         secondary: {
           50: '#fdf4ff',
@@ -33,9 +35,6 @@ export default {
           900: '#701a75',
           950: '#4a044e',
         },
-      },
-      fontFamily: {
-        sans: ['Inter var', 'sans-serif'],
       },
       animation: {
         'spin-slow': 'spin 3s linear infinite',

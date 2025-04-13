@@ -93,6 +93,28 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['paypal', 'bank_transfer', 'crypto'],
+        default: null
+    },
+    paymentDetails: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null,
+        select: false
+    },
+    totalEarnings: {
+        type: Number,
+        default: 0
+    },
+    lastWithdrawal: {
+        type: Date,
+        default: null
+    },
+    withdrawalEligible: {
+        type: Boolean,
+        default: false
     }
 });
 
@@ -102,6 +124,9 @@ userSchema.pre('save', async function(next) {
     
     this.password = await bcrypt.hash(this.password, 12);
     this.passwordConfirm = undefined;
+    if (this.isModified('totalEarnings')) {
+        this.withdrawalEligible = await this.checkWithdrawalEligibility();
+    }
     next();
 });
 
@@ -122,6 +147,35 @@ userSchema.methods.hasExceededDailyLimit = function() {
     }
     
     return this.dailyViewCount.count >= process.env.MAX_VIEWS_PER_DAY;
+};
+
+// Add this before the User model is created
+userSchema.virtual('availableBalance', {
+    ref: 'Earning',
+    localField: '_id',
+    foreignField: 'user',
+    pipeline: [
+        {
+            $group: {
+                _id: null,
+                total: { $sum: '$amount' }
+            }
+        }
+    ],
+    justOne: true
+});
+
+userSchema.virtual('pendingWithdrawals', {
+    ref: 'Withdrawal',
+    localField: '_id',
+    foreignField: 'user',
+    match: { status: 'pending' }
+});
+
+// Add method to check withdrawal eligibility
+userSchema.methods.checkWithdrawalEligibility = function() {
+    const minimumBalance = 10; // $10 minimum withdrawal
+    return this.availableBalance >= minimumBalance;
 };
 
 const User = mongoose.model('User', userSchema);

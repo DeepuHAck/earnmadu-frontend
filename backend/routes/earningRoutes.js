@@ -12,10 +12,9 @@ router.patch('/payment-info', earningController.updatePaymentInfo);
 router.post('/withdraw', earningController.requestWithdrawal);
 
 // Admin only routes
-router.get(
-    '/stats',
-    authController.restrictTo('admin'),
-    earningController.getEarningsStats
-);
+router.use(authController.restrictTo('admin'));
+router.get('/stats', earningController.getEarningsStats);
+router.get('/withdrawals', earningController.getAllWithdrawals);
+router.patch('/withdrawals/:id', earningController.updateWithdrawalStatus);
 
 module.exports = router; 

@@ -6,7 +6,7 @@ const helmet = require('helmet');
 const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
 const cookieParser = require('cookie-parser');
-require('dotenv').config();
+const dotenv = require('dotenv');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -57,12 +57,35 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Database connection successful'))
-    .catch((err) => console.error('Database connection error:', err));
+// Handle uncaught exceptions
+process.on('uncaughtException', err => {
+    console.log('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+    console.log(err.name, err.message);
+    process.exit(1);
+});
+
+dotenv.config({ path: './.env' });
+
+const DB = process.env.DATABASE.replace(
+    '<PASSWORD>',
+    process.env.DATABASE_PASSWORD
+);
+
+mongoose.connect(DB, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log('DB connection successful!'));
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+const server = app.listen(port, () => {
+    console.log(`App running on port ${port}...`);
+});
+
+// Handle unhandled rejections
+process.on('unhandledRejection', err => {
+    console.log('UNHANDLED REJECTION! 💥 Shutting down...');
+    console.log(err.name, err.message);
+    server.close(() => {
+        process.exit(1);
+    });
 }); 

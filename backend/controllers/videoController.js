@@ -3,6 +3,7 @@ const Video = require('../models/videoModel');
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const View = require('../models/viewModel');
 
 const youtube = google.youtube({
     version: 'v3',
@@ -123,6 +124,265 @@ exports.updateVideoStatus = catchAsync(async (req, res, next) => {
     res.status(200).json({
         status: 'success',
         data: { video }
+    });
+});
+
+// Public video access
+exports.getAllVideos = catchAsync(async (req, res, next) => {
+    const videos = await Video.find({ status: 'published' })
+        .select('-__v')
+        .populate('creator', 'name');
+
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: { videos }
+    });
+});
+
+exports.getTrendingVideos = catchAsync(async (req, res, next) => {
+    const videos = await Video.find({ status: 'published' })
+        .sort('-viewCount -createdAt')
+        .limit(20)
+        .select('-__v')
+        .populate('creator', 'name');
+
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: { videos }
+    });
+});
+
+exports.searchVideos = catchAsync(async (req, res, next) => {
+    const { query } = req.query;
+    if (!query) {
+        return next(new AppError('Please provide a search query', 400));
+    }
+
+    const videos = await Video.find({
+        status: 'published',
+        $or: [
+            { title: { $regex: query, $options: 'i' } },
+            { description: { $regex: query, $options: 'i' } }
+        ]
+    })
+    .select('-__v')
+    .populate('creator', 'name');
+
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: { videos }
+    });
+});
+
+exports.getVideo = catchAsync(async (req, res, next) => {
+    const video = await Video.findById(req.params.id)
+        .populate('creator', 'name')
+        .select('-__v');
+
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: { video }
+    });
+});
+
+// Video view handling
+exports.validateVideoView = catchAsync(async (req, res, next) => {
+    const video = await Video.findById(req.params.videoId);
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    // Check if video is published
+    if (video.status !== 'published') {
+        return next(new AppError('This video is not available', 403));
+    }
+
+    // Check for recent views from this user/IP to prevent abuse
+    const recentView = await View.findOne({
+        user: req.user.id,
+        video: video.id,
+        createdAt: { $gte: new Date(Date.now() - 30 * 60 * 1000) } // 30 minutes
+    });
+
+    if (recentView) {
+        return next(new AppError('Please wait before viewing this video again', 400));
+    }
+
+    req.video = video;
+    next();
+});
+
+exports.recordVideoView = catchAsync(async (req, res, next) => {
+    // Create view record
+    await View.create({
+        user: req.user.id,
+        video: req.video.id,
+        ip: req.ip
+    });
+
+    // Increment video view count
+    await Video.findByIdAndUpdate(req.video.id, {
+        $inc: { viewCount: 1 }
+    });
+
+    next();
+});
+
+exports.sendViewResponse = (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        data: {
+            message: 'View recorded successfully',
+            earning: req.earning,
+            cooldown: {
+                viewId: req.cooldown.viewId,
+                startedAt: req.cooldown.startedAt,
+                duration: req.cooldown.duration,
+                message: '⏳ Hold down for 10 minutes here without closing or going back to get the next video.'
+            }
+        }
+    });
+};
+
+// User's video management
+exports.getMyVideos = catchAsync(async (req, res, next) => {
+    const videos = await Video.find({ creator: req.user.id })
+        .select('-__v');
+
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: { videos }
+    });
+});
+
+exports.uploadVideo = catchAsync(async (req, res, next) => {
+    // Video upload logic here (using your preferred upload service)
+    next();
+});
+
+exports.processVideo = catchAsync(async (req, res, next) => {
+    // Video processing logic here (transcoding, thumbnail generation, etc.)
+    next();
+});
+
+exports.createVideo = catchAsync(async (req, res, next) => {
+    const video = await Video.create({
+        ...req.body,
+        creator: req.user.id
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: { video }
+    });
+});
+
+exports.checkVideoOwnership = catchAsync(async (req, res, next) => {
+    const video = await Video.findById(req.params.id);
+    
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    if (video.creator.toString() !== req.user.id) {
+        return next(new AppError('You do not have permission to modify this video', 403));
+    }
+
+    req.video = video;
+    next();
+});
+
+exports.updateVideo = catchAsync(async (req, res, next) => {
+    const video = await Video.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+            new: true,
+            runValidators: true
+        }
+    );
+
+    res.status(200).json({
+        status: 'success',
+        data: { video }
+    });
+});
+
+exports.deleteVideo = catchAsync(async (req, res, next) => {
+    await Video.findByIdAndDelete(req.params.id);
+
+    res.status(204).json({
+        status: 'success',
+        data: null
+    });
+});
+
+// Admin controllers
+exports.getAllVideosAdmin = catchAsync(async (req, res, next) => {
+    const videos = await Video.find()
+        .populate('creator', 'name email')
+        .select('-__v');
+
+    res.status(200).json({
+        status: 'success',
+        results: videos.length,
+        data: { videos }
+    });
+});
+
+exports.getVideoAdmin = catchAsync(async (req, res, next) => {
+    const video = await Video.findById(req.params.id)
+        .populate('creator', 'name email')
+        .select('-__v');
+
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: { video }
+    });
+});
+
+exports.updateVideoAdmin = catchAsync(async (req, res, next) => {
+    const video = await Video.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+            new: true,
+            runValidators: true
+        }
+    ).populate('creator', 'name email');
+
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: { video }
+    });
+});
+
+exports.deleteVideoAdmin = catchAsync(async (req, res, next) => {
+    const video = await Video.findByIdAndDelete(req.params.id);
+
+    if (!video) {
+        return next(new AppError('No video found with that ID', 404));
+    }
+
+    res.status(204).json({
+        status: 'success',
+        data: null
     });
 });
 

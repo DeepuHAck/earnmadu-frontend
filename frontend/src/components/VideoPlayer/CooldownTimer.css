@@ -1,0 +1,64 @@
+.cooldown-timer {
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.timer-display {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.timer-value {
+    font-size: 48px;
+    font-weight: bold;
+    font-family: monospace;
+    margin-bottom: 10px;
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff00, #00cc00);
+    transition: width 1s linear;
+}
+
+.cooldown-message {
+    text-align: center;
+}
+
+.warning {
+    color: #ff9800;
+    font-size: 18px;
+    margin-bottom: 10px;
+    animation: pulse 2s infinite;
+}
+
+.time-left {
+    color: #ffffff;
+    font-size: 16px;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+} 
