@@ -5,6 +5,13 @@ import AppRoutes from './routes';
 import { AuthProvider } from './store/auth-context';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Debug: Log environment variables (excluding sensitive data)
+console.log('App Init:', {
+  nodeEnv: import.meta.env.MODE,
+  baseUrl: import.meta.env.VITE_API_URL,
+  hasYoutubeKey: !!import.meta.env.VITE_YOUTUBE_API_KEY
+});
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -15,25 +22,29 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  console.log('App Render Start');
+
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
-            <AppRoutes />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 5000,
-                style: {
-                  background: '#333',
-                  color: '#fff',
-                },
-              }}
-            />
-          </Router>
-        </AuthProvider>
-      </QueryClientProvider>
+      <div className="min-h-screen bg-gray-50">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Router>
+              <AppRoutes />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 5000,
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </Router>
+          </AuthProvider>
+        </QueryClientProvider>
+      </div>
     </ErrorBoundary>
   );
 }

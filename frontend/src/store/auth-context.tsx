@@ -5,7 +5,7 @@ import {
   useEffect,
   ReactNode,
 } from 'react';
-import axios from 'axios';
+import api from '../lib/axios';
 
 interface User {
   id: string;
@@ -40,6 +40,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  console.log('AuthProvider Init');
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -48,55 +49,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkAuth = async () => {
+    console.log('Checking auth status...');
     try {
-      const { data } = await axios.get('/api/auth/me');
+      const { data } = await api.get('/auth/me');
+      console.log('Auth check response:', data);
       setUser(data.data);
-    } catch (error) {
+    } catch (err: any) {
+      console.log('Auth check failed:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
       setUser(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (email: string, password: string) => {
-    const { data } = await axios.post('/api/auth/login', {
-      email,
-      password,
-    });
-    setUser(data.data);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
-  const register = async (name: string, email: string, password: string) => {
-    const { data } = await axios.post('/api/auth/register', {
-      name,
-      email,
-      password,
-    });
-    setUser(data.data);
-  };
-
-  const logout = async () => {
-    await axios.post('/api/auth/logout');
-    setUser(null);
-  };
-
-  const updateUser = (data: Partial<User>) => {
-    setUser((prev) => (prev ? { ...prev, ...data } : null));
-  };
-
-  const value = {
+  return <AuthContext.Provider value={{
     user,
     isAuthenticated: !!user,
     isLoading,
-    login,
-    register,
-    logout,
-    updateUser,
-  };
-
-  if (isLoading) {
-    return null; // or a loading spinner
-  }
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    login: async (email, password) => {
+      try {
+        const { data } = await api.post('/auth/login', { email, password });
+        setUser(data.data);
+      } catch (err: any) {
+        console.error('Login failed:', err.response?.data);
+        throw err;
+      }
+    },
+    register: async (name, email, password) => {
+      try {
+        const { data } = await api.post('/auth/register', { name, email, password });
+        setUser(data.data);
+      } catch (err: any) {
+        console.error('Registration failed:', err.response?.data);
+        throw err;
+      }
+    },
+    logout: async () => {
+      try {
+        await api.post('/auth/logout');
+        setUser(null);
+      } catch (err: any) {
+        console.error('Logout failed:', err.response?.data);
+        throw err;
+      }
+    },
+    updateUser: (data) => setUser(prev => prev ? { ...prev, ...data } : null)
+  }}>{children}</AuthContext.Provider>;
 }; 
