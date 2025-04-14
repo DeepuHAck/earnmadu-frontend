@@ -2,11 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import Profile from './pages/Profile';
 import Earnings from './pages/Earnings';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './store/auth-context';
 import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 

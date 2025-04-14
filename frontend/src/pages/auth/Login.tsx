@@ -1,35 +1,29 @@
-import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { useNavigate, Link } from 'react-router-dom';
-import { setCredentials } from '../store/slices/authSlice';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../store/auth-context';
+import { toast } from 'react-hot-toast';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
-      const response = await axios.post('/api/users/login', {
-        email,
-        password,
-      });
-
-      dispatch(setCredentials(response.data.data));
+      await login(email, password);
       toast.success('Login successful!');
-      navigate('/');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed');
+      navigate('/app');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Login failed');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -53,19 +47,17 @@ const Login = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="email" className="sr-only">
                 Email address
               </label>
               <input
-                id="email-address"
+                id="email"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
@@ -80,8 +72,6 @@ const Login = () => {
                 required
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
@@ -89,10 +79,10 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
         </form>
