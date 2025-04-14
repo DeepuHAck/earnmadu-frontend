@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../store/auth-context';
 
 function Navbar() {
   const { user, logout } = useAuth();
+  
+  console.log('Navbar render:', { user });
 
   return (
     <nav className="bg-white shadow-lg">

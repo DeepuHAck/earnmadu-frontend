@@ -66,29 +66,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  return <AuthContext.Provider value={{
+  const contextValue = {
     user,
     isAuthenticated: !!user,
     isLoading,
-    login: async (email, password) => {
+    login: async (email: string, password: string) => {
       try {
+        setIsLoading(true);
         const { data } = await api.post('/api/v1/auth/login', { email, password });
         setUser(data.data);
       } catch (err: any) {
         console.error('Login failed:', err.response?.data);
         throw err;
+      } finally {
+        setIsLoading(false);
       }
     },
-    register: async (name, email, password) => {
+    register: async (name: string, email: string, password: string) => {
       try {
+        setIsLoading(true);
         console.log('Attempting registration with:', { name, email });
         const { data } = await api.post('/api/v1/auth/register', { name, email, password });
         console.log('Registration response:', data);
@@ -100,17 +96,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           status: err.response?.status
         });
         throw err;
+      } finally {
+        setIsLoading(false);
       }
     },
     logout: async () => {
       try {
+        setIsLoading(true);
         await api.post('/api/v1/auth/logout');
         setUser(null);
       } catch (err: any) {
         console.error('Logout failed:', err.response?.data);
         throw err;
+      } finally {
+        setIsLoading(false);
       }
     },
-    updateUser: (data) => setUser(prev => prev ? { ...prev, ...data } : null)
-  }}>{children}</AuthContext.Provider>;
+    updateUser: (data: Partial<User>) => setUser(prev => prev ? { ...prev, ...data } : null)
+  };
+
+  console.log('AuthProvider state:', { user, isLoading });
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
+  );
 }; 
