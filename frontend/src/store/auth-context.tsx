@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async () => {
     console.log('Checking auth status...');
     try {
-      const { data } = await api.get('/auth/me');
+      const { data } = await api.get('/api/v1/auth/me');
       console.log('Auth check response:', data);
       setUser(data.data);
     } catch (err: any) {
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     login: async (email, password) => {
       try {
-        const { data } = await api.post('/auth/login', { email, password });
+        const { data } = await api.post('/api/v1/auth/login', { email, password });
         setUser(data.data);
       } catch (err: any) {
         console.error('Login failed:', err.response?.data);
@@ -89,16 +89,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
     register: async (name, email, password) => {
       try {
-        const { data } = await api.post('/auth/register', { name, email, password });
+        console.log('Attempting registration with:', { name, email });
+        const { data } = await api.post('/api/v1/auth/register', { name, email, password });
+        console.log('Registration response:', data);
         setUser(data.data);
       } catch (err: any) {
-        console.error('Registration failed:', err.response?.data);
+        console.error('Registration failed:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status
+        });
         throw err;
       }
     },
     logout: async () => {
       try {
-        await api.post('/auth/logout');
+        await api.post('/api/v1/auth/logout');
         setUser(null);
       } catch (err: any) {
         console.error('Logout failed:', err.response?.data);
