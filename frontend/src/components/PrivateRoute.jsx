@@ -1,18 +1,25 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../store/auth-context';
 
-function PrivateRoute({ adminOnly = false }) {
-  const { user } = useAuth();
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
 
-  if (!user) {
+  console.log('PrivateRoute:', { isAuthenticated, isLoading });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
-  if (adminOnly && user.role !== 'admin') {
-    return <Navigate to="/dashboard" />;
-  }
-
-  return <Outlet />;
-}
+  return children;
+};
 
 export default PrivateRoute; 
