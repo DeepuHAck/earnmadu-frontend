@@ -1,28 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { setVideos, setLoading, setError } from '../store/slices/videoSlice';
-import axios from 'axios';
+import api from '../lib/axios';
 
 const Home = () => {
-  const dispatch = useDispatch();
-  const { videos, loading, error } = useSelector((state) => state.video);
+  const [videos, setVideos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchVideos = async () => {
+      console.log('Fetching videos...');
       try {
-        dispatch(setLoading(true));
-        const response = await axios.get('/api/videos');
-        dispatch(setVideos(response.data.data.videos));
+        setLoading(true);
+        console.log('API URL:', import.meta.env.VITE_API_URL);
+        const response = await api.get('/videos');
+        console.log('API Response:', response.data);
+        setVideos(response.data.data.videos);
       } catch (err) {
-        dispatch(setError(err.response?.data?.message || 'Error fetching videos'));
+        console.error('Error fetching videos:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+          config: {
+            url: err.config?.url,
+            method: err.config?.method,
+            baseURL: err.config?.baseURL,
+          }
+        });
+        setError(err.response?.data?.message || 'Error fetching videos');
       } finally {
-        dispatch(setLoading(false));
+        setLoading(false);
       }
     };
 
     fetchVideos();
-  }, [dispatch]);
+  }, []);
+
+  // Debug render
+  console.log('Render state:', { loading, error, videosCount: videos.length });
 
   if (loading) {
     return (
@@ -36,13 +51,24 @@ const Home = () => {
     return (
       <div className="text-center py-8">
         <p className="text-red-500">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Available Videos</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Available Videos</h1>
+        <div className="text-sm text-gray-500">
+          Total Videos: {videos.length}
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
           <div
@@ -54,6 +80,10 @@ const Home = () => {
                 src={video.thumbnailUrl}
                 alt={video.title}
                 className="w-full h-48 object-cover"
+                onError={(e) => {
+                  console.error('Image load error:', video.thumbnailUrl);
+                  e.target.src = 'https://via.placeholder.com/480x360.png?text=Video+Thumbnail';
+                }}
               />
               <div className="p-4">
                 <h2 className="text-xl font-semibold mb-2">{video.title}</h2>
