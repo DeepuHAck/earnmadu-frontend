@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async () => {
     console.log('Checking auth status...');
     try {
-      const { data } = await api.get('/api/v1/auth/me');
+      const { data } = await api.get('/auth/me');
       console.log('Auth check response:', data);
       setUser(data.data);
     } catch (err: any) {
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login: async (email: string, password: string) => {
       try {
         setIsLoading(true);
-        const { data } = await api.post('/api/v1/auth/login', { email, password });
+        const { data } = await api.post('/auth/login', { email, password });
         setUser(data.data);
       } catch (err: any) {
         console.error('Login failed:', err.response?.data);
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setIsLoading(true);
         console.log('Attempting registration with:', { name, email });
-        const { data } = await api.post('/api/v1/auth/register', { name, email, password });
+        const { data } = await api.post('/auth/register', { name, email, password });
         console.log('Registration response:', data);
         setUser(data.data);
       } catch (err: any) {
@@ -103,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout: async () => {
       try {
         setIsLoading(true);
-        await api.post('/api/v1/auth/logout');
+        await api.post('/auth/logout');
         setUser(null);
       } catch (err: any) {
         console.error('Logout failed:', err.response?.data);

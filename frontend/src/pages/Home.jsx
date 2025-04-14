@@ -13,7 +13,7 @@ const Home = () => {
       try {
         setLoading(true);
         console.log('API URL:', import.meta.env.VITE_API_URL);
-        const response = await api.get('/api/v1/videos');
+        const response = await api.get('/videos');
         console.log('Videos API Response:', response.data);
         setVideos(response.data.data || []);
       } catch (err) {
@@ -25,6 +25,7 @@ const Home = () => {
             url: err.config?.url,
             method: err.config?.method,
             baseURL: err.config?.baseURL,
+            fullUrl: `${err.config?.baseURL}${err.config?.url}`
           }
         });
         setError(err.response?.data?.message || 'Error fetching videos');

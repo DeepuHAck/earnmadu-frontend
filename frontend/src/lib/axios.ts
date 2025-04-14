@@ -1,23 +1,34 @@
 import axios from 'axios';
 
 // Debug: Log the API URL
-console.log('API URL:', import.meta.env.VITE_API_URL);
+const baseURL = import.meta.env.VITE_API_URL?.endsWith('/')
+  ? import.meta.env.VITE_API_URL.slice(0, -1)
+  : import.meta.env.VITE_API_URL;
+
+console.log('API URL:', baseURL);
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
 // Add request interceptor for debugging
 api.interceptors.request.use(
   (config) => {
+    // Ensure URL doesn't have double /api/v1
+    if (config.url?.startsWith('/api/v1') && config.baseURL?.endsWith('/api/v1')) {
+      config.url = config.url.replace('/api/v1', '');
+    }
+    
     console.log('API Request:', {
       method: config.method,
       url: config.url,
-      baseURL: config.baseURL
+      baseURL: config.baseURL,
+      fullUrl: `${config.baseURL}${config.url}`
     });
     return config;
   },
@@ -32,7 +43,8 @@ api.interceptors.response.use(
   (response) => {
     console.log('API Response:', {
       status: response.status,
-      url: response.config.url
+      url: response.config.url,
+      data: response.data
     });
     return response;
   },
@@ -41,7 +53,8 @@ api.interceptors.response.use(
       message: error.message,
       status: error.response?.status,
       data: error.response?.data,
-      url: error.config?.url
+      url: error.config?.url,
+      fullUrl: `${error.config?.baseURL}${error.config?.url}`
     });
     if (error.response?.status === 401) {
       // Handle unauthorized access
